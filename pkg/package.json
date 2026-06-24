@@ -1,0 +1,14 @@
+{
+  "name": "decision_tree",
+  "version": "0.1.0",
+  "files": [
+    "decision_tree_bg.wasm",
+    "decision_tree.js",
+    "decision_tree.d.ts"
+  ],
+  "module": "decision_tree.js",
+  "types": "decision_tree.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

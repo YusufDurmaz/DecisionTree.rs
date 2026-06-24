@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DecisionTree.rs</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Graphviz renderer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/full.render.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <div>
+            <h1>DecisionTree.rs</h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Custom GitHub Star Button -->
+            <a class="gh-star-btn" href="https://github.com/YusufDurmaz/DecisionTree.rs" target="_blank"
+                aria-label="Star YusufDurmaz/DecisionTree.rs on GitHub">
+                <div class="gh-star-left">
+                    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+                        <path fill-rule="evenodd"
+                            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z">
+                        </path>
+                    </svg>
+                    <span>Star</span>
+                </div>
+                <div id="ghStarCount" class="gh-star-count">0</div>
+            </a>
+            <div class="lang-switch-wrapper" style="display: flex; align-items: center; gap: 0.5rem;">
+                <!-- Globe Emoji for English -->
+                <span id="flag-en" style="font-size: 1.15rem; display: block; line-height: 1;">🌐</span>
+                <!-- TR Flag SVG -->
+                <svg id="flag-tr" class="lang-flag" width="21" height="14" viewBox="0 0 1200 800"
+                    style="display: none; border-radius: 2px; border: 1px solid var(--border-color); flex-shrink: 0;">
+                    <rect width="1200" height="800" fill="#e30a17" />
+                    <circle cx="450" cy="400" r="200" fill="#fff" />
+                    <circle cx="500" cy="400" r="160" fill="#e30a17" />
+                    <polygon
+                        points="575.5,400 644.2,422.3 644.2,494.4 686.7,435.9 755.4,458.2 712.9,400 755.4,341.8 686.7,364.1 644.2,305.6 644.2,377.7"
+                        fill="#fff" />
+                </svg>
+                <select id="langSelect"
+                    style="width: auto; padding: 0.375rem 1.5rem 0.375rem 0.75rem; font-size: 0.875rem;">
+                    <option value="en">English</option>
+                    <option value="tr">Türkçe</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel">
+            <h2 data-i18n="configTitle">Configuration</h2>
+
+            <div class="form-group">
+                <label for="dataFile" data-i18n="datasetLabel">Dataset (JSON)</label>
+                <input type="file" id="dataFile" accept=".json">
+            </div>
+
+            <div class="form-group">
+                <label for="targetCol" data-i18n="targetLabel">Target Column (To Predict)</label>
+                <select id="targetCol" disabled>
+                    <option value="" data-i18n="uploadFirst">Upload a file first...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="inputsLabel">Input Columns (Features)</label>
+                <div class="column-select-actions">
+                    <span class="action-link" id="selectAllFeatures" data-i18n="selectAll">Select All</span>
+                    <span class="action-link" id="selectNoneFeatures" data-i18n="clearAll">Clear All</span>
+                </div>
+                <div id="featureColsList" class="checkbox-group">
+                    <span style="color: var(--text-secondary); font-size: 0.875rem; padding: 0.5rem; display: block;"
+                        data-i18n="uploadFirst">Upload a file first...</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="learningPreset" data-i18n="learningLabel">Learning Intensity / Detail (%)</label>
+                <select id="learningPreset">
+                    <option value="70" data-i18n="p70">70% (Simple / Fast Tree)</option>
+                    <option value="80" selected data-i18n="p80">80% (Standard Decision Tree)</option>
+                    <option value="90" data-i18n="p90">90% (Advanced / Detailed Tree)</option>
+                    <option value="95" data-i18n="p95">95% (Highly Detailed Tree)</option>
+                    <option value="100" data-i18n="p100">100% (Overfit / Maximum Fit)</option>
+                    <option value="custom" data-i18n="custom">Custom (Advanced Settings)</option>
+                </select>
+            </div>
+
+            <details id="advancedSettings" style="margin-bottom: 1.25rem;">
+                <summary
+                    style="font-size: 0.875rem; color: var(--accent-blue); cursor: pointer; margin-bottom: 0.5rem; font-weight: 500; user-select: none;"
+                    data-i18n="advancedHeader">
+                    Advanced Hyperparameters
+                </summary>
+                <div
+                    style="padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: 6px; background-color: var(--bg-hover); display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="maxDepth" data-i18n="maxDepthLabel">Maximum Depth</label>
+                        <input type="number" id="maxDepth" value="6" min="1">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="minSamples" data-i18n="minSamplesLabel">Min. Samples for Split</label>
+                        <input type="number" id="minSamples" value="5" min="2">
+                    </div>
+                </div>
+            </details>
+
+            <button id="generateBtn" disabled data-i18n="generateBtn">Generate Tree</button>
+            <div class="kelime-tevhid">
+                لَا إِلٰهَ إِلَّا اللهُ مُحَمَّدٌ رَسُولُ اللهِ
+            </div>
+            <div id="statusMsg" class="status"></div>
+        </div>
+
+        <div class="panel">
+            <h2 data-i18n="resultsTitle">Results</h2>
+
+            <!-- Performance Report Dashboard -->
+            <div id="metricsPanel" class="metrics-grid" style="display: none;">
+                <div class="metric-card success">
+                    <div id="val-accuracy" class="metric-value">0%</div>
+                    <div class="metric-label" data-i18n="accuracyLabel">Accuracy Rate</div>
+                </div>
+                <div class="metric-card">
+                    <div id="val-correct" class="metric-value">0</div>
+                    <div class="metric-label" data-i18n="correctLabel">Correct Predictions</div>
+                </div>
+                <div class="metric-card">
+                    <div id="val-incorrect" class="metric-value">0</div>
+                    <div class="metric-label" data-i18n="incorrectLabel">Incorrect Predictions</div>
+                </div>
+            </div>
+
+            <div class="result-tabs">
+                <div class="tab active" data-target="tab-graph" data-i18n="tabGraph">Visual (Graphviz)</div>
+                <div class="tab" data-target="tab-editor" data-i18n="tabEditor">Dataset Editor</div>
+                <div class="tab" data-target="tab-codegen" data-i18n="tabCodegen">Code Generator</div>
+                <div class="tab" data-target="tab-playground" data-i18n="tabPlayground">Model Test Playground</div>
+                <div class="tab" data-target="tab-games" data-i18n="tabGames">Mini Games</div>
+            </div>
+
+            <!-- 1. Graph viz tab -->
+            <div id="tab-graph" class="tab-content active">
+                <div class="graph-wrapper">
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
+                        <button class="zoom-btn" id="zoomOut" title="Zoom Out">-</button>
+                        <button class="zoom-btn" id="zoomReset" title="Reset">R</button>
+                    </div>
+                    <div id="graph-container">
+                        <div
+                            style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 2.5rem 1.5rem; max-width: 580px; box-sizing: border-box; gap: 0.75rem;">
+                            <div style="font-size: 3rem; margin-bottom: 0.25rem;">🌳</div>
+                            <h3
+                                style="margin: 0 0 0.25rem 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                                DecisionTree.rs</h3>
+                            <p id="graph-placeholder" data-i18n="graphPlaceholder"
+                                style="margin: 0; font-size: 0.875rem; line-height: 1.6; color: var(--text-secondary);">
+                                Welcome to DecisionTree.rs! This tool is an interactive web-based utility for training,
+                                analyzing, and exporting Decision Tree classifiers. You can upload a dataset (JSON),
+                                customize training hyperparameters, visually explore the resulting tree model with pan &
+                                zoom capabilities, benchmark prediction latency, and generate native code in 10
+                                different programming languages. Designed for developers and data engineers.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem; text-align: right;"
+                    data-i18n="graphTip">
+                    Tip: Drag to pan, scroll mouse wheel to zoom.
+                </div>
+            </div>
+
+            <!-- 1b. Dataset Editor tab -->
+            <div id="tab-editor" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex: 1;">
+                        <input type="text" id="editorSearch" class="editor-search-input" placeholder="Search rows...">
+                        <span id="editorRowCount" style="font-size: 0.875rem; color: var(--text-secondary); font-weight: 500;">0 rows</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="editorAddRowBtn" class="btn-add-row">+ Add Row</button>
+                        <button id="editorResetBtn" class="btn-reset-data" title="Reset to original uploaded data">Reset Data</button>
+                    </div>
+                </div>
+                
+                <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; max-height: 400px; background-color: #ffffff;">
+                    <table id="editorTable" style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left;">
+                        <thead style="background-color: var(--bg-hover); position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border-color);">
+                            <tr id="editorThRow">
+                                <!-- Headers generated dynamically -->
+                            </tr>
+                        </thead>
+                        <tbody id="editorTbody">
+                            <!-- Rows generated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination Controls Container -->
+                <div id="editorPagination" style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                </div>
+                <div id="editorTipMessage" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.75rem;" data-i18n="editorTip">
+                    Tip: Double-click any cell to edit its value directly. Press Enter or click outside to save.
+                </div>
+            </div>
+
+            <!-- 2. Codegen tab -->
+            <div id="tab-codegen" class="tab-content">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label for="codegenLang" data-i18n="targetLang">Target Language</label>
+                        <select id="codegenLang">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="typescript">TypeScript</option>
+                            <option value="java">Java</option>
+                            <option value="csharp">C#</option>
+                            <option value="cpp">C++</option>
+                            <option value="rust">Rust</option>
+                            <option value="go">Go (Golang)</option>
+                            <option value="php">PHP</option>
+                            <option value="ruby">Ruby</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="codegenFormat" data-i18n="formatLabel">Format</label>
+                        <select id="codegenFormat">
+                            <option value="fast" data-i18n="formatFast">Fast (If-Else)</option>
+                            <option value="compact" data-i18n="formatCompact">Compact (Array/Struct)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button id="generateCodeBtn" style="padding: 0.625rem 1.5rem; height: 38px;"
+                            data-i18n="btnGenerateCode">Generate Code</button>
+                    </div>
+                </div>
+                <pre><code id="generatedCode" data-i18n="codePlaceholder">Select a language above and click "Generate Code" to build...</code></pre>
+            </div>
+
+            <!-- 3. Playground tab -->
+            <div id="tab-playground" class="tab-content">
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin-top: 0; margin-bottom: 0.25rem;"
+                        data-i18n="pgHeader">Interactive Prediction & Performance Test</h3>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;" data-i18n="pgSub">Enter
+                        input values to test the model in real-time and measure execution speed.</p>
+                </div>
+
+                <div id="playgroundForm" class="playground-grid">
+                    <div class="placeholder-msg"
+                        style="grid-column: span 2; color: var(--text-secondary); font-size: 0.875rem; text-align: center; padding: 2rem; border: 1px dashed var(--border-color); border-radius: 8px;"
+                        data-i18n="pgPlaceholder">
+                        Please generate the tree first to test the model.
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                    <button id="testPredictBtn" disabled data-i18n="btnTestPredict">Predict & Benchmark Speed</button>
+                </div>
+
+                <div id="playgroundResults"
+                    style="display: none; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                    <div
+                        style="background-color: #f8fafc; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; font-weight: 600; display: flex; justify-content: space-between;">
+                        <span data-i18n="testResLabel">Prediction Result</span>
+                        <span id="testResLabel" style="color: var(--success-color);">OK</span>
+                    </div>
+                    <div
+                        style="padding: 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div style="border-right: 1px solid var(--border-color);">
+                            <div id="testOutputVal"
+                                style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">-</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 0.25rem;"
+                                data-i18n="testPredictedSub">Predicted Class</div>
+                        </div>
+                        <div>
+                            <div id="testSpeedVal"
+                                style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">-</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 0.25rem;"
+                                data-i18n="testSpeedSub">Avg. Execution Time (100k tests)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Mini Games tab -->
+            <div id="tab-games" class="tab-content">
+                <div id="gameSelectRow"
+                    style="display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px dashed var(--border-color); order: 1;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <label for="gameSelect" data-i18n="selectGame"
+                            style="font-weight: 600; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0;">Select
+                            Game:</label>
+                        <select id="gameSelect"
+                            style="width: auto; min-width: 200px; padding: 0.5rem 2.25rem 0.5rem 0.75rem; font-size: 0.875rem; border-radius: 6px; background-color: var(--surface-color);">
+                            <option value="none">-- Select / Seçiniz --</option>
+                            <option value="xox">Tic-Tac-Toe (XOX)</option>
+                            <option value="snake">Snake (Yılan Oyunu)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- XOX Container -->
+                <div id="xoxContainer"
+                    style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;">
+                    <h3 style="margin: 0; font-size: 1.125rem;">Tic-Tac-Toe vs DecisionTree Bot</h3>
+                    <div id="xoxTurn" style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Your turn (X)</div>
+                    <div class="xox-grid"
+                        style="display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 6px;">
+                        <div class="xox-cell" data-idx="0"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="1"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="2"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="3"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="4"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="5"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="6"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="7"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                        <div class="xox-cell" data-idx="8"
+                            style="background-color: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; cursor: pointer; user-select: none; width: 100px; height: 100px; box-sizing: border-box;">
+                        </div>
+                    </div>
+                    <button id="resetXoxBtn"
+                        style="width: auto; padding: 0.5rem 1.5rem; margin-top: 0.5rem;">Restart</button>
+                </div>
+
+                <!-- Snake Container -->
+                <div id="snakeContainer"
+                    style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;">
+                    <h3 style="margin: 0; font-size: 1.125rem;">Snake Game</h3>
+                    <div style="display: flex; gap: 2rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <div>Score: <span id="snakeScore"
+                                style="font-weight: bold; color: var(--accent-color);">0</span></div>
+                        <div>High Score: <span id="snakeHighScore" style="font-weight: bold;">0</span></div>
+                    </div>
+                    <canvas id="snakeCanvas" width="300" height="300"
+                        style="border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-hover); display: block;"></canvas>
+                    <button id="resetSnakeBtn" style="width: auto; padding: 0.5rem 1.5rem;">Start Game</button>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);" data-i18n="snakeTip">
+                        Tip: Use Arrow keys or WASD to guide the snake.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js" type="module"></script>
+</body>
+
+</html>
